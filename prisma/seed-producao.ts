@@ -3,6 +3,7 @@
 // depois que a migração (`prisma migrate deploy`) já tiver sido aplicada.
 //
 // Uso: npx tsx prisma/seed-producao.ts
+import "dotenv/config";
 import { randomBytes } from "node:crypto";
 import { PrismaClient } from "../generated/prisma/client";
 import { PrismaPg } from "@prisma/adapter-pg";
