@@ -1,6 +1,5 @@
-import { mkdir, writeFile } from "node:fs/promises";
-import path from "node:path";
 import { randomUUID } from "node:crypto";
+import { put } from "@vercel/blob";
 import sharp from "sharp";
 import { db } from "@/lib/db";
 
@@ -9,7 +8,7 @@ const TAMANHO_MAXIMO = 8 * 1024 * 1024;
 const LARGURA_MAXIMA = 1600;
 
 function extensaoDe(nomeArquivo: string) {
-  const ext = path.extname(nomeArquivo).replace(".", "").toLowerCase();
+  const ext = nomeArquivo.split(".").pop()?.toLowerCase();
   return ext || "jpg";
 }
 
@@ -30,20 +29,12 @@ export async function salvarFotosValidas(
   arquivos: File[],
   parcelaId: string | null
 ) {
-  const pastaDestino = path.join(
-    process.cwd(),
-    "public",
-    "uploads",
-    "vistorias",
-    vistoriaId
-  );
-  await mkdir(pastaDestino, { recursive: true });
-
   for (const arquivo of arquivos) {
     const bytesOriginais = Buffer.from(await arquivo.arrayBuffer());
     const ehJpegOuPng = arquivo.type === "image/jpeg" || arquivo.type === "image/png";
-    let bytesFinais = bytesOriginais;
+    let bytesFinais: Buffer = bytesOriginais;
     let extensaoFinal = extensaoDe(arquivo.name);
+    let contentType = arquivo.type;
 
     if (ehJpegOuPng) {
       bytesFinais = await sharp(bytesOriginais)
@@ -52,16 +43,20 @@ export async function salvarFotosValidas(
         .jpeg({ quality: 80 })
         .toBuffer();
       extensaoFinal = "jpg";
+      contentType = "image/jpeg";
     }
 
     const nomeArquivo = `${randomUUID()}.${extensaoFinal}`;
-    await writeFile(path.join(pastaDestino, nomeArquivo), bytesFinais);
+    const blob = await put(`vistorias/${vistoriaId}/${nomeArquivo}`, bytesFinais, {
+      access: "public",
+      contentType,
+    });
 
     await db.fotoVistoria.create({
       data: {
         vistoriaId,
         parcelaId: parcelaId || null,
-        url: `/uploads/vistorias/${vistoriaId}/${nomeArquivo}`,
+        url: blob.url,
       },
     });
   }

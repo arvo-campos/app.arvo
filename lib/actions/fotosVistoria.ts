@@ -1,6 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { del } from "@vercel/blob";
 import { requireSession } from "@/lib/auth";
 import { db } from "@/lib/db";
 
@@ -20,7 +21,8 @@ export async function deleteFotoVistoria(formData: FormData) {
   if (!vistoria) return;
 
   const fotoId = formData.get("fotoId") as string;
-  await db.fotoVistoria.delete({ where: { id: fotoId } });
+  const foto = await db.fotoVistoria.delete({ where: { id: fotoId } });
+  await del(foto.url).catch(() => {});
   revalidatePath(`/vistorias/${vistoriaId}`);
 }
 

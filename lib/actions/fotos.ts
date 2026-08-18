@@ -1,9 +1,8 @@
 "use server";
 
-import { mkdir, writeFile } from "node:fs/promises";
-import path from "node:path";
 import { randomUUID } from "node:crypto";
 import { revalidatePath } from "next/cache";
+import { put, del } from "@vercel/blob";
 import sharp from "sharp";
 import { requireAdmin } from "@/lib/auth";
 import { db } from "@/lib/db";
@@ -14,7 +13,7 @@ const TAMANHO_MAXIMO = 8 * 1024 * 1024; // 8MB por foto
 const LARGURA_MAXIMA = 1600;
 
 function extensaoDe(nomeArquivo: string) {
-  const ext = path.extname(nomeArquivo).replace(".", "").toLowerCase();
+  const ext = nomeArquivo.split(".").pop()?.toLowerCase();
   return ext || "jpg";
 }
 
@@ -45,21 +44,13 @@ export async function uploadFotos(
     }
   }
 
-  const pastaDestino = path.join(
-    process.cwd(),
-    "public",
-    "uploads",
-    "manejos",
-    manejoId
-  );
-  await mkdir(pastaDestino, { recursive: true });
-
   for (const arquivo of arquivos) {
     const bytesOriginais = Buffer.from(await arquivo.arrayBuffer());
     const ehJpegOuPng = arquivo.type === "image/jpeg" || arquivo.type === "image/png";
 
-    let bytesFinais = bytesOriginais;
+    let bytesFinais: Buffer = bytesOriginais;
     let extensaoFinal = extensaoDe(arquivo.name);
+    let contentType = arquivo.type;
 
     if (ehJpegOuPng) {
       bytesFinais = await sharp(bytesOriginais)
@@ -68,15 +59,19 @@ export async function uploadFotos(
         .jpeg({ quality: 80 })
         .toBuffer();
       extensaoFinal = "jpg";
+      contentType = "image/jpeg";
     }
 
     const nomeArquivo = `${randomUUID()}.${extensaoFinal}`;
-    await writeFile(path.join(pastaDestino, nomeArquivo), bytesFinais);
+    const blob = await put(`manejos/${manejoId}/${nomeArquivo}`, bytesFinais, {
+      access: "public",
+      contentType,
+    });
 
     await db.foto.create({
       data: {
         manejoId,
-        url: `/uploads/manejos/${manejoId}/${nomeArquivo}`,
+        url: blob.url,
       },
     });
   }
@@ -89,7 +84,8 @@ export async function deleteFoto(formData: FormData) {
   await requireAdmin();
   const fotoId = formData.get("fotoId") as string;
   const manejoId = formData.get("manejoId") as string;
-  await db.foto.delete({ where: { id: fotoId } });
+  const foto = await db.foto.delete({ where: { id: fotoId } });
+  await del(foto.url).catch(() => {});
   revalidatePath(`/manejos/${manejoId}`);
 }
 

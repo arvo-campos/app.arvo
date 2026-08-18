@@ -1,5 +1,4 @@
 import { Document, Page, View, Text, Image, StyleSheet } from "@react-pdf/renderer";
-import path from "node:path";
 import { ArvoMark } from "./ArvoMark";
 import { PDF_COLORS, registerFonts } from "./fonts";
 import { STATUS_MANEJO_PDF_COLOR } from "./statusColors";
@@ -293,7 +292,7 @@ export function EventoDocument({ evento }: { evento: EventoParaPdf }) {
                 <Image
                   key={foto.id}
                   style={styles.foto}
-                  src={path.join(process.cwd(), "public", foto.url)}
+                  src={foto.url}
                 />
               ))}
             </View>

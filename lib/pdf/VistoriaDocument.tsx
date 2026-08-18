@@ -1,5 +1,4 @@
 import { Document, Page, View, Text, Image, StyleSheet } from "@react-pdf/renderer";
-import path from "node:path";
 import { ArvoMark } from "./ArvoMark";
 import { PDF_COLORS, registerFonts } from "./fonts";
 
@@ -157,7 +156,7 @@ export function VistoriaDocument({ vistoria }: { vistoria: VistoriaParaPdf }) {
                 <View key={foto.id} style={styles.fotoWrap}>
                   <Image
                     style={styles.foto}
-                    src={path.join(process.cwd(), "public", foto.url)}
+                    src={foto.url}
                   />
                   {(foto.parcela || foto.legenda) && (
                     <Text style={styles.fotoLegenda}>
