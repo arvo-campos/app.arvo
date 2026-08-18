@@ -1,0 +1,29 @@
+@import "tailwindcss";
+
+:root {
+  --background: #faf6ef;
+  --foreground: #1c1b19;
+
+  --arvo-terracota: #c4501c;
+  --arvo-terracota-contraste: #f0662a;
+  --arvo-grafite: #1c1b19;
+  --arvo-bg: #faf6ef;
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+
+  --color-arvo-terracota: var(--arvo-terracota);
+  --color-arvo-terracota-contraste: var(--arvo-terracota-contraste);
+  --color-arvo-grafite: var(--arvo-grafite);
+  --color-arvo-bg: var(--arvo-bg);
+
+  --font-display: var(--font-archivo);
+  --font-sans: var(--font-archivo);
+}
+
+body {
+  background: var(--background);
+  color: var(--foreground);
+}

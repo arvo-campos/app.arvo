@@ -1,0 +1,18 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 178 278" width="1424" height="2224" role="img" aria-label="Arvo — No alvo, de primeira.">
+  <title>Arvo — lockup vertical (alto contraste sobre foto)</title>
+  <desc>Tipografia: Archivo (700 nome, 500 slogan). Converta o texto em curvas antes de enviar para gráfica.</desc>
+  <g transform="translate(0 0) scale(1.7800)">
+  <g fill="#F0662A">
+    <rect x="23.5" y="5.5" width="53" height="9" rx="4.5"></rect>
+    <rect x="10.3" y="18.5" width="79.4" height="9" rx="4.5"></rect>
+    <rect x="4.1" y="31.5" width="91.8" height="9" rx="4.5"></rect>
+    <rect x="2" y="45.5" width="36" height="9" rx="4.5"></rect>
+    <rect x="62" y="45.5" width="36" height="9" rx="4.5"></rect>
+    <rect x="4.1" y="58.5" width="91.8" height="9" rx="4.5"></rect>
+    <rect x="10.3" y="71.5" width="79.4" height="9" rx="4.5"></rect>
+    <rect x="23.5" y="84.5" width="53" height="9" rx="4.5"></rect>
+  </g>
+  </g>
+  <text x="0" y="256" textLength="178" lengthAdjust="spacing" font-family="Archivo, Helvetica, Arial, sans-serif" font-weight="700" font-size="78" fill="#FAF6EF">Arvo</text>
+  <text x="0" y="274" textLength="178" lengthAdjust="spacing" font-family="Archivo, Helvetica, Arial, sans-serif" font-weight="500" font-size="15.5" fill="#FAF6EF">No alvo, de primeira<tspan fill="#F0662A">.</tspan></text>
+</svg>

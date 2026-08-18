@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" width="1000" height="1000" role="img" aria-label="Arvo">
+  <title>Arvo — símbolo (terracota)</title>
+  <g fill="#C4501C">
+    <rect x="23.5" y="5.5" width="53" height="9" rx="4.5"></rect>
+    <rect x="10.3" y="18.5" width="79.4" height="9" rx="4.5"></rect>
+    <rect x="4.1" y="31.5" width="91.8" height="9" rx="4.5"></rect>
+    <rect x="2" y="45.5" width="36" height="9" rx="4.5"></rect>
+    <rect x="62" y="45.5" width="36" height="9" rx="4.5"></rect>
+    <rect x="4.1" y="58.5" width="91.8" height="9" rx="4.5"></rect>
+    <rect x="10.3" y="71.5" width="79.4" height="9" rx="4.5"></rect>
+    <rect x="23.5" y="84.5" width="53" height="9" rx="4.5"></rect>
+  </g>
+</svg>
