@@ -1,12 +1,58 @@
 "use client";
 
 import { useActionState } from "react";
-import { createUsuarioCliente, deleteUsuarioCliente } from "@/lib/actions/usuarios";
+import {
+  createUsuarioCliente,
+  deleteUsuarioCliente,
+  resetSenhaUsuario,
+} from "@/lib/actions/usuarios";
 import type { FormState } from "@/lib/actions/clientes";
 import { Field } from "@/components/ui/Field";
 import { Button } from "@/components/ui/Button";
 
 type Usuario = { id: string; nome: string; email: string };
+
+function ResetSenhaUsuario({
+  usuario,
+  clienteId,
+}: {
+  usuario: Usuario;
+  clienteId: string;
+}) {
+  const action = resetSenhaUsuario.bind(null, usuario.id, clienteId);
+  const [state, formAction, pending] = useActionState<FormState, FormData>(
+    action,
+    undefined
+  );
+
+  return (
+    <details className="group">
+      <summary className="cursor-pointer list-none text-xs font-medium text-arvo-terracota select-none hover:underline">
+        Redefinir senha
+      </summary>
+      <form
+        action={formAction}
+        className="mt-2 rounded-lg bg-white p-3 shadow-sm"
+      >
+        <Field
+          label="Nova senha"
+          name="senha"
+          type="password"
+          error={state?.fieldErrors?.senha}
+          required
+        />
+        {state?.error && (
+          <p className="mb-3 rounded-lg bg-red-50 px-3 py-2 text-xs text-red-600">
+            {state.error}
+          </p>
+        )}
+        <Button type="submit" disabled={pending}>
+          {pending ? "Salvando..." : "Salvar nova senha"}
+        </Button>
+      </form>
+    </details>
+  );
+}
 
 export function UsuariosCliente({
   clienteId,
@@ -39,24 +85,29 @@ export function UsuariosCliente({
         {usuarios.map((usuario) => (
           <li
             key={usuario.id}
-            className="flex items-center justify-between rounded-lg bg-arvo-bg px-3 py-2"
+            className="rounded-lg bg-arvo-bg px-3 py-2"
           >
-            <div>
-              <p className="text-sm font-medium text-arvo-grafite">
-                {usuario.nome}
-              </p>
-              <p className="text-xs text-arvo-grafite/50">{usuario.email}</p>
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm font-medium text-arvo-grafite">
+                  {usuario.nome}
+                </p>
+                <p className="text-xs text-arvo-grafite/50">{usuario.email}</p>
+              </div>
+              <div className="flex items-center gap-4">
+                <ResetSenhaUsuario usuario={usuario} clienteId={clienteId} />
+                <form action={deleteUsuarioCliente}>
+                  <input type="hidden" name="usuarioId" value={usuario.id} />
+                  <input type="hidden" name="clienteId" value={clienteId} />
+                  <button
+                    type="submit"
+                    className="text-xs font-medium text-red-600 hover:underline"
+                  >
+                    Remover
+                  </button>
+                </form>
+              </div>
             </div>
-            <form action={deleteUsuarioCliente}>
-              <input type="hidden" name="usuarioId" value={usuario.id} />
-              <input type="hidden" name="clienteId" value={clienteId} />
-              <button
-                type="submit"
-                className="text-xs font-medium text-red-600 hover:underline"
-              >
-                Remover
-              </button>
-            </form>
           </li>
         ))}
       </ul>

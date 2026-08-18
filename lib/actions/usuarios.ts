@@ -5,7 +5,7 @@ import { revalidatePath } from "next/cache";
 import { requireAdmin } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { hashPassword } from "@/lib/auth";
-import { usuarioClienteSchema } from "@/lib/validations/usuario";
+import { usuarioClienteSchema, resetSenhaSchema } from "@/lib/validations/usuario";
 import type { FormState } from "./clientes";
 
 export async function createUsuarioCliente(
@@ -46,6 +46,34 @@ export async function createUsuarioCliente(
       role: "cliente",
       clienteId,
     },
+  });
+
+  revalidatePath(`/clientes/${clienteId}/editar`);
+  return undefined;
+}
+
+export async function resetSenhaUsuario(
+  usuarioId: string,
+  clienteId: string,
+  _prevState: FormState,
+  formData: FormData
+): Promise<FormState> {
+  await requireAdmin();
+
+  const parsed = resetSenhaSchema.safeParse({
+    senha: formData.get("senha"),
+  });
+  if (!parsed.success) {
+    return {
+      error: "Verifique a senha.",
+      fieldErrors: z.flattenError(parsed.error).fieldErrors,
+    };
+  }
+
+  const senhaHash = await hashPassword(parsed.data.senha);
+  await db.usuario.update({
+    where: { id: usuarioId },
+    data: { senha: senhaHash, tentativasFalhas: 0, bloqueadoAte: null },
   });
 
   revalidatePath(`/clientes/${clienteId}/editar`);
