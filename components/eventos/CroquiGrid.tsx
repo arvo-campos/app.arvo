@@ -1,11 +1,17 @@
 "use client";
 
-import { useActionState, useState } from "react";
+import { useActionState, useRef, useState } from "react";
+import type { PointerEvent as ReactPointerEvent } from "react";
 import Link from "next/link";
 import { Move } from "lucide-react";
 import { createParcela, deleteParcela, moverParcela } from "@/lib/actions/parcelas";
 import type { FormState } from "@/lib/actions/clientes";
 import { cn } from "@/lib/utils";
+
+// Distância mínima (em pixels) que o dedo/mouse precisa se mover a partir do
+// ícone de mover pra contar como um arraste de verdade. Abaixo disso, é
+// tratado como um toque simples (fluxo de selecionar-e-trocar).
+const LIMIAR_ARRASTE_PX = 8;
 
 type Parcela = {
   id: string;
@@ -42,6 +48,20 @@ export function CroquiGrid({
 
   const [selecionada, setSelecionada] = useState<string | null>(null);
 
+  // Estado do arraste (mouse ou toque, via Pointer Events — funciona igual
+  // nos dois). "arrastandoId" é a parcela sendo movida; "alvoHoverId" é a
+  // parcela que está embaixo do dedo/cursor no momento, pra destacar onde ela
+  // vai cair ao soltar.
+  const [arrastandoId, setArrastandoId] = useState<string | null>(null);
+  const [alvoHoverId, setAlvoHoverId] = useState<string | null>(null);
+  const gestoRef = useRef<{
+    origemId: string;
+    inicioX: number;
+    inicioY: number;
+    arrastando: boolean;
+  } | null>(null);
+  const suprimirCliqueRef = useRef(false);
+
   function alternarSelecao(parcelaId: string) {
     if (!selecionada) {
       setSelecionada(parcelaId);
@@ -51,6 +71,65 @@ export function CroquiGrid({
       moverParcela(selecionada, parcelaId);
       setSelecionada(null);
     }
+  }
+
+  function encerrarGesto() {
+    gestoRef.current = null;
+    setArrastandoId(null);
+    setAlvoHoverId(null);
+  }
+
+  function iniciarArraste(e: ReactPointerEvent<HTMLButtonElement>, parcelaId: string) {
+    e.currentTarget.setPointerCapture(e.pointerId);
+    gestoRef.current = {
+      origemId: parcelaId,
+      inicioX: e.clientX,
+      inicioY: e.clientY,
+      arrastando: false,
+    };
+  }
+
+  function moverArraste(e: ReactPointerEvent<HTMLButtonElement>) {
+    const gesto = gestoRef.current;
+    if (!gesto) return;
+
+    if (!gesto.arrastando) {
+      const dx = e.clientX - gesto.inicioX;
+      const dy = e.clientY - gesto.inicioY;
+      if (Math.hypot(dx, dy) < LIMIAR_ARRASTE_PX) return;
+      gesto.arrastando = true;
+      setArrastandoId(gesto.origemId);
+    }
+
+    const elementoAlvo = document
+      .elementFromPoint(e.clientX, e.clientY)
+      ?.closest<HTMLElement>("[data-parcela-id]");
+    const alvoId = elementoAlvo?.dataset.parcelaId ?? null;
+    // Só corredores e ruas não trocam de lugar — mesma regra de antes.
+    const alvoValido =
+      alvoId &&
+      alvoId !== gesto.origemId &&
+      parcelas.find((p) => p.id === alvoId)?.tipo === "parcela";
+    setAlvoHoverId(alvoValido ? alvoId : null);
+  }
+
+  function soltarArraste() {
+    const gesto = gestoRef.current;
+    if (gesto?.arrastando) {
+      suprimirCliqueRef.current = true;
+      if (alvoHoverId && alvoHoverId !== gesto.origemId) {
+        moverParcela(gesto.origemId, alvoHoverId);
+      }
+    }
+    encerrarGesto();
+  }
+
+  function aoClicarMover(parcelaId: string) {
+    if (suprimirCliqueRef.current) {
+      suprimirCliqueRef.current = false;
+      return;
+    }
+    alternarSelecao(parcelaId);
   }
 
   return (
@@ -64,7 +143,7 @@ export function CroquiGrid({
           <>
             <p className="mb-3 text-xs text-arvo-grafite/50">
               {podeEditar
-                ? "Toque numa parcela para ver os manejos feitos nela. Pra trocar duas de lugar, toque no ícone de mover em uma e depois na outra (ou arraste, no computador)."
+                ? "Toque numa parcela para ver os manejos feitos nela. Pra trocar duas de lugar, arraste pelo ícone de mover — ou toque nele e depois na outra parcela."
                 : "Toque numa parcela para ver os manejos feitos nela."}
             </p>
             <div
@@ -80,32 +159,19 @@ export function CroquiGrid({
                 return (
                   <div
                     key={parcela.id}
-                    draggable={arrastavel}
-                    onDragStart={(e) => {
-                      e.dataTransfer.setData("text/plain", parcela.id);
-                      e.dataTransfer.effectAllowed = "move";
-                    }}
-                    onDragOver={(e) => {
-                      if (arrastavel) e.preventDefault();
-                    }}
-                    onDrop={(e) => {
-                      e.preventDefault();
-                      if (!podeEditar) return;
-                      const arrastadaId = e.dataTransfer.getData("text/plain");
-                      if (arrastadaId && arrastadaId !== parcela.id) {
-                        moverParcela(arrastadaId, parcela.id);
-                      }
-                    }}
+                    data-parcela-id={parcela.id}
                     style={{
                       gridColumnStart: parcela.posX + 1,
                       gridRowStart: parcela.posY + 1,
                     }}
                     className={cn(
-                      "group relative flex flex-col items-center justify-center rounded-lg border p-2 text-center text-xs",
+                      "group relative flex flex-col items-center justify-center rounded-lg border p-2 text-center text-xs transition",
                       TIPO_ESTILO[parcela.tipo],
-                      arrastavel && "cursor-grab active:cursor-grabbing",
                       selecionada === parcela.id &&
-                        "ring-2 ring-arvo-terracota ring-offset-1"
+                        "ring-2 ring-arvo-terracota ring-offset-1",
+                      arrastandoId === parcela.id && "opacity-40",
+                      alvoHoverId === parcela.id &&
+                        "ring-2 ring-dashed ring-arvo-terracota bg-arvo-terracota/5"
                     )}
                   >
                     {clicavel ? (
@@ -129,16 +195,21 @@ export function CroquiGrid({
                     {podeEditar && arrastavel && (
                       <button
                         type="button"
-                        onClick={() => alternarSelecao(parcela.id)}
-                        title="Mover parcela"
+                        onPointerDown={(e) => iniciarArraste(e, parcela.id)}
+                        onPointerMove={moverArraste}
+                        onPointerUp={soltarArraste}
+                        onPointerCancel={encerrarGesto}
+                        onClick={() => aoClicarMover(parcela.id)}
+                        title="Arrastar para mover, ou tocar e depois tocar em outra parcela"
+                        aria-label="Mover parcela"
                         className={cn(
-                          "absolute top-1 left-1 flex h-5 w-5 items-center justify-center rounded-full text-white",
-                          selecionada === parcela.id
+                          "absolute top-0.5 left-0.5 flex h-7 w-7 touch-none items-center justify-center rounded-full text-white select-none",
+                          selecionada === parcela.id || arrastandoId === parcela.id
                             ? "bg-arvo-terracota"
                             : "bg-arvo-grafite/40"
                         )}
                       >
-                        <Move className="h-3 w-3" />
+                        <Move className="h-3.5 w-3.5" />
                       </button>
                     )}
                     {podeEditar && (
