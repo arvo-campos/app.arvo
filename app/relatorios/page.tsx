@@ -107,13 +107,9 @@ async function RelatorioCliente({ session }: { session: Session }) {
     0
   );
 
-  const totalFotosManejo = await db.foto.count({
+  const totalFotos = await db.foto.count({
     where: { manejo: { evento: { clienteId } } },
   });
-  const totalFotosVistoria = await db.fotoVistoria.count({
-    where: { vistoria: { evento: { clienteId } } },
-  });
-  const totalFotos = totalFotosManejo + totalFotosVistoria;
 
   const historicoAprovacao = await db.historicoAprovacao.groupBy({
     by: ["acao"],

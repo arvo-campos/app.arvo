@@ -1,12 +1,24 @@
 import { notFound } from "next/navigation";
 import { requireSession } from "@/lib/auth";
 import { db } from "@/lib/db";
-import { FotosVistoriaGaleria } from "@/components/vistorias/FotosVistoriaGaleria";
 import { deleteVistoria } from "@/lib/actions/vistorias";
+import { StatusBadge } from "@/components/ui/StatusBadge";
+import {
+  ESTAGIO_CULTURA_LABEL,
+  NIVEL_VISTORIA_LABEL,
+  NIVEL_VISTORIA_CLASSES,
+} from "@/lib/constants";
 
 function formatarData(data: Date) {
   return new Intl.DateTimeFormat("pt-BR").format(data);
 }
+
+const CATEGORIAS_AVALIACAO = [
+  { campo: "nivelPragas", label: "Pragas" },
+  { campo: "nivelDoencas", label: "Doenças" },
+  { campo: "nivelPlantasDaninhas", label: "Plantas daninhas" },
+  { campo: "nivelEstresseHidrico", label: "Estresse hídrico / clima" },
+] as const;
 
 export default async function VistoriaDetailPage(
   props: PageProps<"/vistorias/[id]">
@@ -19,7 +31,7 @@ export default async function VistoriaDetailPage(
     include: {
       evento: { include: { cliente: true } },
       autor: true,
-      fotos: { include: { parcela: true }, orderBy: { criadoEm: "asc" } },
+      parcelasSugeridas: { select: { id: true, nome: true } },
     },
   });
 
@@ -28,8 +40,13 @@ export default async function VistoriaDetailPage(
     notFound();
   }
 
-  const podeEditarFotos =
-    session.role === "admin" || vistoria.autorId === session.userId;
+  const categoriasAvaliadas = CATEGORIAS_AVALIACAO.filter(
+    ({ campo }) => vistoria[campo]
+  );
+  const temSugestaoManejo =
+    vistoria.sugestaoProduto ||
+    vistoria.sugestaoDosagem ||
+    vistoria.parcelasSugeridas.length > 0;
 
   return (
     <div className="mx-auto w-full max-w-3xl px-4 py-10 sm:px-6">
@@ -64,7 +81,31 @@ export default async function VistoriaDetailPage(
       </div>
       <p className="text-sm text-arvo-grafite/60">
         Registrada por {vistoria.autor.nome}
+        {vistoria.estagioCultura &&
+          ` · Estágio: ${ESTAGIO_CULTURA_LABEL[vistoria.estagioCultura]}`}
       </p>
+
+      {categoriasAvaliadas.length > 0 && (
+        <div className="mt-6 rounded-2xl border border-arvo-terracota/10 bg-white p-5 shadow-sm">
+          <h2 className="mb-3 text-sm font-semibold text-arvo-grafite">
+            Avaliação do campo
+          </h2>
+          <div className="flex flex-wrap gap-2">
+            {categoriasAvaliadas.map(({ campo, label }) => {
+              const nivel = vistoria[campo] as string;
+              return (
+                <div key={campo} className="flex items-center gap-2 text-sm">
+                  <span className="text-arvo-grafite/60">{label}:</span>
+                  <StatusBadge
+                    label={NIVEL_VISTORIA_LABEL[nivel]}
+                    className={NIVEL_VISTORIA_CLASSES[nivel]}
+                  />
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
 
       {vistoria.solicitaIntervencao && (
         <div className="mt-6 rounded-2xl border border-arvo-terracota/40 bg-arvo-terracota/5 p-5">
@@ -98,13 +139,39 @@ export default async function VistoriaDetailPage(
         </div>
       )}
 
-      <div className="mt-6">
-        <FotosVistoriaGaleria
-          vistoriaId={vistoria.id}
-          fotos={vistoria.fotos}
-          podeEditar={podeEditarFotos}
-        />
-      </div>
+      {temSugestaoManejo && (
+        <div className="mt-6 rounded-2xl border border-arvo-terracota/10 bg-white p-5 shadow-sm">
+          <h2 className="mb-3 text-sm font-semibold text-arvo-grafite">
+            Sugestão de manejo
+          </h2>
+          <div className="grid grid-cols-2 gap-4">
+            {vistoria.sugestaoProduto && (
+              <div>
+                <p className="text-xs text-arvo-grafite/50">Produto</p>
+                <p className="text-sm text-arvo-grafite">
+                  {vistoria.sugestaoProduto}
+                </p>
+              </div>
+            )}
+            {vistoria.sugestaoDosagem && (
+              <div>
+                <p className="text-xs text-arvo-grafite/50">Dosagem</p>
+                <p className="text-sm text-arvo-grafite">
+                  {vistoria.sugestaoDosagem}
+                </p>
+              </div>
+            )}
+          </div>
+          {vistoria.parcelasSugeridas.length > 0 && (
+            <div className="mt-3">
+              <p className="text-xs text-arvo-grafite/50">Parcelas</p>
+              <p className="text-sm text-arvo-grafite">
+                {vistoria.parcelasSugeridas.map((p) => p.nome).join(", ")}
+              </p>
+            </div>
+          )}
+        </div>
+      )}
     </div>
   );
 }

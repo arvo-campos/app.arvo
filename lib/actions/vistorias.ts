@@ -6,7 +6,6 @@ import { revalidatePath } from "next/cache";
 import { requireSession, requireAdmin } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { vistoriaSchema } from "@/lib/validations/vistoria";
-import { validarFotos, salvarFotosValidas } from "@/lib/fotosVistoriaHelpers";
 import type { FormState } from "./clientes";
 
 export async function createVistoria(
@@ -15,7 +14,12 @@ export async function createVistoria(
 ): Promise<FormState> {
   const session = await requireSession();
 
-  const parsed = vistoriaSchema.safeParse(Object.fromEntries(formData.entries()));
+  const raw = Object.fromEntries(formData.entries());
+  const parcelasSugeridasIds = formData
+    .getAll("parcelasSugeridasIds")
+    .filter((v): v is string => typeof v === "string" && v.length > 0);
+
+  const parsed = vistoriaSchema.safeParse({ ...raw, parcelasSugeridasIds });
   if (!parsed.success) {
     return {
       error: "Verifique os campos destacados.",
@@ -31,17 +35,14 @@ export async function createVistoria(
     return { error: "Evento não encontrado." };
   }
 
-  const arquivos = formData
-    .getAll("fotos")
-    .filter((item): item is File => item instanceof File && item.size > 0);
-  const erroFotos = arquivos.length > 0 ? validarFotos(arquivos) : null;
-  if (erroFotos) {
-    return { error: erroFotos };
-  }
-  const parcelaId = (formData.get("parcelaId") as string) || null;
-
-  const { eventoId, data, solicitaIntervencao, intervencaoDescricao, ...rest } =
-    parsed.data;
+  const {
+    eventoId,
+    data,
+    solicitaIntervencao,
+    intervencaoDescricao,
+    parcelasSugeridasIds: parcelaIds,
+    ...rest
+  } = parsed.data;
 
   const vistoria = await db.vistoria.create({
     data: {
@@ -50,13 +51,13 @@ export async function createVistoria(
       data: new Date(data),
       solicitaIntervencao,
       intervencaoDescricao: solicitaIntervencao ? intervencaoDescricao : null,
+      parcelasSugeridas:
+        parcelaIds.length > 0
+          ? { connect: parcelaIds.map((id) => ({ id })) }
+          : undefined,
       ...rest,
     },
   });
-
-  if (arquivos.length > 0) {
-    await salvarFotosValidas(vistoria.id, arquivos, parcelaId);
-  }
 
   revalidatePath("/vistorias");
   redirect(`/vistorias/${vistoria.id}`);

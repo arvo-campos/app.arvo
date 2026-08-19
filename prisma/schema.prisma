@@ -36,17 +36,17 @@ model Evento {
 }
 
 model Parcela {
-  id             String         @id @default(uuid())
-  eventoId       String
-  evento         Evento         @relation(fields: [eventoId], references: [id], onDelete: Cascade)
-  nome           String // ex: "GH 2459"
-  linhas         Int?
-  largura        String?
-  posX           Int
-  posY           Int
-  tipo           String // "parcela" | "corredor" | "rua"
-  manejos        Manejo[]
-  fotosVistoria  FotoVistoria[]
+  id                 String     @id @default(uuid())
+  eventoId           String
+  evento             Evento     @relation(fields: [eventoId], references: [id], onDelete: Cascade)
+  nome               String // ex: "GH 2459"
+  linhas             Int?
+  largura            String?
+  posX               Int
+  posY               Int
+  tipo               String // "parcela" | "corredor" | "rua"
+  manejos            Manejo[]
+  vistoriasSugeridas Vistoria[]
 }
 
 model Manejo {
@@ -94,14 +94,14 @@ model Manejo {
   produtos    Produto[]
   historico   HistoricoAprovacao[]
   comentarios Comentario[]
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  createdAt   DateTime             @default(now())
+  updatedAt   DateTime             @updatedAt
 }
 
 model Produto {
-  id          String  @id @default(uuid())
+  id          String @id @default(uuid())
   manejoId    String
-  manejo      Manejo  @relation(fields: [manejoId], references: [id], onDelete: Cascade)
+  manejo      Manejo @relation(fields: [manejoId], references: [id], onDelete: Cascade)
   numTrat     Int
   nome        String
   ingrediente String
@@ -139,43 +139,44 @@ model Comentario {
 }
 
 model Usuario {
-  id               String                @id @default(uuid())
+  id               String               @id @default(uuid())
   nome             String
-  email            String                @unique
+  email            String               @unique
   senha            String
   role             String // "admin" | "cliente"
   clienteId        String?
-  cliente          Cliente?              @relation(fields: [clienteId], references: [id])
+  cliente          Cliente?             @relation(fields: [clienteId], references: [id])
   historico        HistoricoAprovacao[]
   comentarios      Comentario[]
   vistorias        Vistoria[]
-  tentativasFalhas Int                   @default(0)
+  tentativasFalhas Int                  @default(0)
   bloqueadoAte     DateTime?
-  createdAt        DateTime              @default(now())
+  createdAt        DateTime             @default(now())
 }
 
 model Vistoria {
-  id                   String         @id @default(uuid())
-  eventoId             String
-  evento               Evento         @relation(fields: [eventoId], references: [id], onDelete: Cascade)
-  autorId              String
-  autor                Usuario        @relation(fields: [autorId], references: [id])
-  data                 DateTime
+  id       String   @id @default(uuid())
+  eventoId String
+  evento   Evento   @relation(fields: [eventoId], references: [id], onDelete: Cascade)
+  autorId  String
+  autor    Usuario  @relation(fields: [autorId], references: [id])
+  data     DateTime
+
+  estagioCultura       String? // "emergencia" | "vegetativo" | "floracao" | "enchimento_graos" | "maturacao" | "colhido"
+  nivelPragas          String? // "nao_observado" | "leve" | "moderado" | "severo"
+  nivelDoencas         String? // idem
+  nivelPlantasDaninhas String? // idem
+  nivelEstresseHidrico String? // idem
+
   condicoes            String?
   observacoes          String?
-  solicitaIntervencao  Boolean        @default(false)
+  solicitaIntervencao  Boolean @default(false)
   intervencaoDescricao String?
-  fotos                FotoVistoria[]
-  criadoEm             DateTime       @default(now())
-}
 
-model FotoVistoria {
-  id         String    @id @default(uuid())
-  vistoriaId String
-  vistoria   Vistoria  @relation(fields: [vistoriaId], references: [id], onDelete: Cascade)
-  parcelaId  String?
-  parcela    Parcela?  @relation(fields: [parcelaId], references: [id], onDelete: SetNull)
-  url        String
-  legenda    String?
-  criadoEm   DateTime  @default(now())
+  // Sugestão opcional de manejo a partir do que foi observado na vistoria.
+  sugestaoProduto   String?
+  sugestaoDosagem   String?
+  parcelasSugeridas Parcela[]
+
+  criadoEm DateTime @default(now())
 }

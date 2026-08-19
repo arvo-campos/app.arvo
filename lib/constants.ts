@@ -34,9 +34,32 @@ export const TIPO_MANEJO_DESCRICAO: Record<string, string> = {
   organizacao: "Desfolha, abertura de ruas, placas, estacas e outras atividades",
 };
 
-// Limite de fotos por envio (manejos e vistorias) — evita passar do limite
-// de tamanho do formulário quando várias fotos de celular, perto do máximo
-// de 8MB cada, são enviadas de uma vez.
+export const ESTAGIO_CULTURA_LABEL: Record<string, string> = {
+  emergencia: "Emergência",
+  vegetativo: "Vegetativo",
+  floracao: "Floração",
+  enchimento_graos: "Enchimento de grãos",
+  maturacao: "Maturação",
+  colhido: "Colhido",
+};
+
+export const NIVEL_VISTORIA_LABEL: Record<string, string> = {
+  nao_observado: "Não observado",
+  leve: "Leve",
+  moderado: "Moderado",
+  severo: "Severo",
+};
+
+export const NIVEL_VISTORIA_CLASSES: Record<string, string> = {
+  nao_observado: "bg-arvo-grafite/10 text-arvo-grafite/70",
+  leve: "bg-blue-100 text-blue-700",
+  moderado: "bg-arvo-terracota/15 text-arvo-terracota",
+  severo: "bg-red-100 text-red-700",
+};
+
+// Limite de fotos por envio de manejo — evita passar do limite de tamanho
+// do formulário quando várias fotos de celular, perto do máximo de 8MB
+// cada, são enviadas de uma vez.
 export const MAX_ARQUIVOS_FOTO = 10;
 
 export const PRESETS_APLICACAO: Record<

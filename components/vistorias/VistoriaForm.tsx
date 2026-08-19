@@ -1,17 +1,33 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useState } from "react";
 import { useActionState } from "react";
 import { createVistoria } from "@/lib/actions/vistorias";
 import type { FormState } from "@/lib/actions/clientes";
 import { Field } from "@/components/ui/Field";
 import { SelectField } from "@/components/ui/SelectField";
 import { Button } from "@/components/ui/Button";
-import { MAX_ARQUIVOS_FOTO } from "@/lib/constants";
+import { ESTAGIO_CULTURA_LABEL, NIVEL_VISTORIA_LABEL } from "@/lib/constants";
 
 function hoje() {
   return new Date().toISOString().slice(0, 10);
 }
+
+const OPCOES_ESTAGIO = [
+  { value: "", label: "Não informado" },
+  ...Object.entries(ESTAGIO_CULTURA_LABEL).map(([value, label]) => ({
+    value,
+    label,
+  })),
+];
+
+const OPCOES_NIVEL = [
+  { value: "", label: "Não avaliado" },
+  ...Object.entries(NIVEL_VISTORIA_LABEL).map(([value, label]) => ({
+    value,
+    label,
+  })),
+];
 
 export function VistoriaForm({
   eventos,
@@ -28,48 +44,13 @@ export function VistoriaForm({
   );
   const [solicitaIntervencao, setSolicitaIntervencao] = useState(false);
   const [eventoId, setEventoId] = useState(eventoIdInicial ?? "");
+  const [parcelasSugeridasIds, setParcelasSugeridasIds] = useState<string[]>([]);
   const parcelasDoEvento = parcelas.filter((p) => p.eventoId === eventoId);
 
-  const [arquivos, setArquivos] = useState<File[]>([]);
-  const inputFotosRef = useRef<HTMLInputElement>(null);
-
-  const previews = useMemo(
-    () => arquivos.map((arquivo) => URL.createObjectURL(arquivo)),
-    [arquivos]
-  );
-
-  useEffect(() => {
-    return () => {
-      previews.forEach((url) => URL.revokeObjectURL(url));
-    };
-  }, [previews]);
-
-  function sincronizarInputFotos(lista: File[]) {
-    const dt = new DataTransfer();
-    lista.forEach((arquivo) => dt.items.add(arquivo));
-    if (inputFotosRef.current) {
-      inputFotosRef.current.files = dt.files;
-    }
-  }
-
-  function adicionarArquivos(selecionados: FileList | null) {
-    if (!selecionados || selecionados.length === 0) return;
-    setArquivos((atual) => {
-      const atualizado = [...atual, ...Array.from(selecionados)].slice(
-        0,
-        MAX_ARQUIVOS_FOTO
-      );
-      sincronizarInputFotos(atualizado);
-      return atualizado;
-    });
-  }
-
-  function removerArquivo(index: number) {
-    setArquivos((atual) => {
-      const atualizado = atual.filter((_, i) => i !== index);
-      sincronizarInputFotos(atualizado);
-      return atualizado;
-    });
+  function alternarParcelaSugerida(id: string) {
+    setParcelasSugeridasIds((prev) =>
+      prev.includes(id) ? prev.filter((p) => p !== id) : [...prev, id]
+    );
   }
 
   return (
@@ -98,6 +79,45 @@ export function VistoriaForm({
         error={state?.fieldErrors?.data}
         required
       />
+
+      <SelectField
+        label="Estágio da cultura"
+        name="estagioCultura"
+        defaultValue=""
+        options={OPCOES_ESTAGIO}
+      />
+
+      <div className="mb-4">
+        <p className="mb-2 text-sm font-medium text-arvo-grafite">
+          Avaliação do campo
+        </p>
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+          <SelectField
+            label="Pragas"
+            name="nivelPragas"
+            defaultValue=""
+            options={OPCOES_NIVEL}
+          />
+          <SelectField
+            label="Doenças"
+            name="nivelDoencas"
+            defaultValue=""
+            options={OPCOES_NIVEL}
+          />
+          <SelectField
+            label="Plantas daninhas"
+            name="nivelPlantasDaninhas"
+            defaultValue=""
+            options={OPCOES_NIVEL}
+          />
+          <SelectField
+            label="Estresse hídrico / clima"
+            name="nivelEstresseHidrico"
+            defaultValue=""
+            options={OPCOES_NIVEL}
+          />
+        </div>
+      </div>
 
       <div className="mb-4">
         <label
@@ -162,86 +182,43 @@ export function VistoriaForm({
         </div>
       )}
 
-      <div className="mb-4">
-        <label className="mb-1 block text-sm font-medium text-arvo-grafite">
-          Fotos
-        </label>
-        <div className="flex flex-wrap items-center gap-3">
-          <input
-            type="file"
-            accept="image/*"
-            multiple
-            onChange={(e) => {
-              adicionarArquivos(e.target.files);
-              e.target.value = "";
-            }}
-            className="text-sm text-arvo-grafite/70"
-          />
-          <label
-            htmlFor="foto-camera"
-            className="cursor-pointer rounded-lg border border-arvo-terracota/30 px-3 py-2 text-xs font-medium text-arvo-terracota hover:bg-arvo-terracota/5"
-          >
-            Tirar foto agora
-          </label>
-          <input
-            id="foto-camera"
-            type="file"
-            accept="image/*"
-            capture="environment"
-            onChange={(e) => {
-              adicionarArquivos(e.target.files);
-              e.target.value = "";
-            }}
-            className="hidden"
-          />
-          {/* Input oculto de verdade — é o único que vai no envio do formulário. */}
-          <input ref={inputFotosRef} type="file" name="fotos" multiple className="hidden" />
-        </div>
-        <p className="mt-1 text-xs text-arvo-grafite/50">
-          {arquivos.length >= MAX_ARQUIVOS_FOTO
-            ? `Limite de ${MAX_ARQUIVOS_FOTO} fotos por envio atingido.`
-            : "Opcional — dá pra escolher fotos já tiradas ou abrir a câmera do celular na hora."}
+      <div className="mb-4 rounded-xl border border-arvo-grafite/10 bg-arvo-bg/40 p-4">
+        <p className="mb-1 text-sm font-medium text-arvo-grafite">
+          Sugestão de manejo
         </p>
-
-        {arquivos.length > 0 && (
-          <div className="mt-3 grid grid-cols-3 gap-2 sm:grid-cols-4">
-            {arquivos.map((arquivo, index) => (
-              <div
-                key={index}
-                className="group relative aspect-square overflow-hidden rounded-lg border border-arvo-grafite/10 bg-arvo-bg"
-              >
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img
-                  src={previews[index]}
-                  alt=""
-                  className="h-full w-full object-cover"
-                />
-                <button
-                  type="button"
-                  onClick={() => removerArquivo(index)}
-                  aria-label="Remover foto"
-                  className="absolute top-1 right-1 flex h-6 w-6 items-center justify-center rounded-full bg-red-500 text-xs leading-none text-white"
+        <p className="mb-3 text-xs text-arvo-grafite/50">
+          Opcional — se já tiver uma recomendação a partir do que observou,
+          deixe registrada aqui.
+        </p>
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+          <Field label="Produto sugerido" name="sugestaoProduto" />
+          <Field label="Dosagem sugerida" name="sugestaoDosagem" />
+        </div>
+        {parcelasSugeridasIds.map((id) => (
+          <input key={id} type="hidden" name="parcelasSugeridasIds" value={id} />
+        ))}
+        {eventoId && parcelasDoEvento.length > 0 && (
+          <div>
+            <p className="mb-1 block text-sm font-medium text-arvo-grafite">
+              Parcelas sugeridas
+            </p>
+            <div className="grid max-h-40 grid-cols-2 gap-1.5 overflow-y-auto rounded-lg border border-arvo-grafite/15 bg-white p-3 sm:grid-cols-3">
+              {parcelasDoEvento.map((p) => (
+                <label
+                  key={p.id}
+                  className="flex items-center gap-1.5 text-sm text-arvo-grafite"
                 >
-                  ×
-                </button>
-              </div>
-            ))}
+                  <input
+                    type="checkbox"
+                    checked={parcelasSugeridasIds.includes(p.id)}
+                    onChange={() => alternarParcelaSugerida(p.id)}
+                    className="accent-arvo-terracota"
+                  />
+                  {p.nome}
+                </label>
+              ))}
+            </div>
           </div>
-        )}
-
-        {arquivos.length > 0 && parcelasDoEvento.length > 0 && (
-          <select
-            name="parcelaId"
-            defaultValue=""
-            className="mt-3 rounded-lg border border-arvo-grafite/15 bg-white px-2 py-2 text-xs"
-          >
-            <option value="">Sem parcela específica</option>
-            {parcelasDoEvento.map((p) => (
-              <option key={p.id} value={p.id}>
-                {p.nome}
-              </option>
-            ))}
-          </select>
         )}
       </div>
 

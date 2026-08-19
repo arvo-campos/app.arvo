@@ -28,7 +28,6 @@ const CLIENTES = [
 ];
 
 async function limparBanco() {
-  await prisma.fotoVistoria.deleteMany();
   await prisma.vistoria.deleteMany();
   await prisma.comentario.deleteMany();
   await prisma.historicoAprovacao.deleteMany();

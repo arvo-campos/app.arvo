@@ -16,7 +16,7 @@ export async function GET(
     include: {
       evento: { include: { cliente: true } },
       autor: true,
-      fotos: { include: { parcela: true }, orderBy: { criadoEm: "asc" } },
+      parcelasSugeridas: { select: { id: true, nome: true } },
     },
   });
 
