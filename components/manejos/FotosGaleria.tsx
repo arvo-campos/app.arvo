@@ -1,9 +1,10 @@
 "use client";
 
-import { useActionState } from "react";
+import { useActionState, useState } from "react";
 import { uploadFotos, deleteFoto, updateFotoLegenda } from "@/lib/actions/fotos";
 import type { FormState } from "@/lib/actions/clientes";
 import { Button } from "@/components/ui/Button";
+import { MAX_ARQUIVOS_FOTO } from "@/lib/constants";
 
 type Foto = {
   id: string;
@@ -20,18 +21,23 @@ export function FotosGaleria({
   manejoId,
   fotos,
   podeEditar,
+  podeEnviar,
 }: {
   manejoId: string;
   fotos: Foto[];
+  /** Apagar foto e editar legenda — só quem administra o manejo. */
   podeEditar: boolean;
+  /** Enviar novas fotos — admin e o cliente dono do evento. */
+  podeEnviar: boolean;
 }) {
   const action = uploadFotos.bind(null, manejoId);
   const [state, formAction, pending] = useActionState<FormState, FormData>(
     action,
     undefined
   );
+  const [excesso, setExcesso] = useState(false);
 
-  if (fotos.length === 0 && !podeEditar) return null;
+  if (fotos.length === 0 && !podeEditar && !podeEnviar) return null;
 
   return (
     <div className="rounded-2xl border border-arvo-terracota/10 bg-white p-5 shadow-sm">
@@ -96,19 +102,27 @@ export function FotosGaleria({
         </div>
       )}
 
-      {podeEditar && (
+      {podeEnviar && (
         <form action={formAction} className="flex flex-wrap items-center gap-3">
           <input
             type="file"
             name="fotos"
             accept="image/*"
             multiple
+            onChange={(e) =>
+              setExcesso((e.target.files?.length ?? 0) > MAX_ARQUIVOS_FOTO)
+            }
             className="text-sm text-arvo-grafite/70"
           />
-          <Button type="submit" disabled={pending}>
+          <Button type="submit" disabled={pending || excesso}>
             {pending ? "Enviando..." : "Enviar fotos"}
           </Button>
         </form>
+      )}
+      {excesso && (
+        <p className="mt-2 text-xs text-red-600">
+          Selecione no máximo {MAX_ARQUIVOS_FOTO} fotos por vez.
+        </p>
       )}
       {state?.error && (
         <p className="mt-2 text-xs text-red-600">{state.error}</p>

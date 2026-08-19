@@ -2,6 +2,7 @@ import { randomUUID } from "node:crypto";
 import { put } from "@vercel/blob";
 import sharp from "sharp";
 import { db } from "@/lib/db";
+import { MAX_ARQUIVOS_FOTO } from "@/lib/constants";
 
 const TIPOS_ACEITOS = ["image/jpeg", "image/png", "image/webp", "image/heic"];
 const TAMANHO_MAXIMO = 8 * 1024 * 1024;
@@ -13,6 +14,9 @@ function extensaoDe(nomeArquivo: string) {
 }
 
 export function validarFotos(arquivos: File[]): string | null {
+  if (arquivos.length > MAX_ARQUIVOS_FOTO) {
+    return `Envie no máximo ${MAX_ARQUIVOS_FOTO} fotos por vez.`;
+  }
   for (const arquivo of arquivos) {
     if (!TIPOS_ACEITOS.includes(arquivo.type)) {
       return `Arquivo "${arquivo.name}" não é uma imagem aceita.`;

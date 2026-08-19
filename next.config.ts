@@ -11,7 +11,11 @@ const nextConfig: NextConfig = {
   allowedDevOrigins: ["192.168.*.*"],
   experimental: {
     serverActions: {
-      bodySizeLimit: "15mb",
+      // Cada foto pode ter até 8MB e um envio pode ter até 10 fotos (ver
+      // MAX_ARQUIVOS em lib/actions/fotos.ts e lib/fotosVistoriaHelpers.ts) —
+      // 90mb cobre isso com folga para a codificação do formulário, ficando
+      // abaixo do limite de 100mb das Vercel Functions.
+      bodySizeLimit: "90mb",
     },
   },
 };

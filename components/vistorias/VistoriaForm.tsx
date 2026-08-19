@@ -7,6 +7,7 @@ import type { FormState } from "@/lib/actions/clientes";
 import { Field } from "@/components/ui/Field";
 import { SelectField } from "@/components/ui/SelectField";
 import { Button } from "@/components/ui/Button";
+import { MAX_ARQUIVOS_FOTO } from "@/lib/constants";
 
 function hoje() {
   return new Date().toISOString().slice(0, 10);
@@ -54,7 +55,10 @@ export function VistoriaForm({
   function adicionarArquivos(selecionados: FileList | null) {
     if (!selecionados || selecionados.length === 0) return;
     setArquivos((atual) => {
-      const atualizado = [...atual, ...Array.from(selecionados)];
+      const atualizado = [...atual, ...Array.from(selecionados)].slice(
+        0,
+        MAX_ARQUIVOS_FOTO
+      );
       sincronizarInputFotos(atualizado);
       return atualizado;
     });
@@ -194,9 +198,9 @@ export function VistoriaForm({
           <input ref={inputFotosRef} type="file" name="fotos" multiple className="hidden" />
         </div>
         <p className="mt-1 text-xs text-arvo-grafite/50">
-          Opcional — dá pra escolher fotos já tiradas ou abrir a câmera do
-          celular na hora. Também é possível adicionar depois, na tela da
-          vistoria.
+          {arquivos.length >= MAX_ARQUIVOS_FOTO
+            ? `Limite de ${MAX_ARQUIVOS_FOTO} fotos por envio atingido.`
+            : "Opcional — dá pra escolher fotos já tiradas ou abrir a câmera do celular na hora."}
         </p>
 
         {arquivos.length > 0 && (

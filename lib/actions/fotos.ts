@@ -4,8 +4,9 @@ import { randomUUID } from "node:crypto";
 import { revalidatePath } from "next/cache";
 import { put, del } from "@vercel/blob";
 import sharp from "sharp";
-import { requireAdmin } from "@/lib/auth";
+import { requireAdmin, requireSession } from "@/lib/auth";
 import { db } from "@/lib/db";
+import { MAX_ARQUIVOS_FOTO } from "@/lib/constants";
 import type { FormState } from "./clientes";
 
 const TIPOS_ACEITOS = ["image/jpeg", "image/png", "image/webp", "image/heic"];
@@ -22,10 +23,16 @@ export async function uploadFotos(
   _prevState: FormState,
   formData: FormData
 ): Promise<FormState> {
-  await requireAdmin();
+  const session = await requireSession();
 
-  const manejo = await db.manejo.findUnique({ where: { id: manejoId } });
+  const manejo = await db.manejo.findUnique({
+    where: { id: manejoId },
+    include: { evento: true },
+  });
   if (!manejo) return { error: "Manejo não encontrado." };
+  if (session.role === "cliente" && manejo.evento.clienteId !== session.clienteId) {
+    return { error: "Manejo não encontrado." };
+  }
 
   const arquivos = formData
     .getAll("fotos")
@@ -33,6 +40,9 @@ export async function uploadFotos(
 
   if (arquivos.length === 0) {
     return { error: "Selecione ao menos uma foto." };
+  }
+  if (arquivos.length > MAX_ARQUIVOS_FOTO) {
+    return { error: `Envie no máximo ${MAX_ARQUIVOS_FOTO} fotos por vez.` };
   }
 
   for (const arquivo of arquivos) {

@@ -34,6 +34,11 @@ export const TIPO_MANEJO_DESCRICAO: Record<string, string> = {
   organizacao: "Desfolha, abertura de ruas, placas, estacas e outras atividades",
 };
 
+// Limite de fotos por envio (manejos e vistorias) — evita passar do limite
+// de tamanho do formulário quando várias fotos de celular, perto do máximo
+// de 8MB cada, são enviadas de uma vez.
+export const MAX_ARQUIVOS_FOTO = 10;
+
 export const PRESETS_APLICACAO: Record<
   string,
   { ponta?: string; volumePonta?: string; pressao?: number; volCalda?: number }

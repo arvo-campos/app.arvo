@@ -288,6 +288,7 @@ export default async function ManejoDetailPage(props: PageProps<"/manejos/[id]">
           manejoId={manejo.id}
           fotos={manejo.fotos}
           podeEditar={session.role === "admin"}
+          podeEnviar
         />
       </div>
 
