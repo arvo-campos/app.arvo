@@ -15,12 +15,23 @@ function formatarData(data: Date) {
 
 export default async function EventosPage(props: PageProps<"/eventos">) {
   const searchParams = await props.searchParams;
+  const busca = firstValue(searchParams.busca);
   const pagina = Math.max(1, Number(searchParams.pagina) || 1);
 
-  const totalEventos = await db.evento.count();
+  const where = busca
+    ? {
+        OR: [
+          { nome: { contains: busca, mode: "insensitive" as const } },
+          { cliente: { nome: { contains: busca, mode: "insensitive" as const } } },
+        ],
+      }
+    : undefined;
+
+  const totalEventos = await db.evento.count({ where });
   const totalPaginas = Math.max(1, Math.ceil(totalEventos / TAMANHO_PAGINA));
 
   const eventos = await db.evento.findMany({
+    where,
     orderBy: { dataInicio: "desc" },
     include: {
       cliente: true,
@@ -31,6 +42,13 @@ export default async function EventosPage(props: PageProps<"/eventos">) {
   });
 
   const capas = await buscarCapasPorEvento(eventos.map((e) => e.id));
+
+  function hrefComPagina(p: number) {
+    const params = new URLSearchParams();
+    if (busca) params.set("busca", busca);
+    params.set("pagina", String(p));
+    return `/eventos?${params.toString()}`;
+  }
 
   return (
     <div className="mx-auto w-full max-w-5xl px-4 py-10 sm:px-6">
@@ -47,7 +65,39 @@ export default async function EventosPage(props: PageProps<"/eventos">) {
         <LinkButton href="/eventos/novo">Novo evento</LinkButton>
       </div>
 
+      <form
+        method="get"
+        className="mt-6 flex gap-3 rounded-2xl border border-arvo-terracota/10 bg-white p-4 shadow-sm"
+      >
+        <input
+          type="text"
+          name="busca"
+          defaultValue={busca ?? ""}
+          placeholder="Buscar por evento ou cliente..."
+          className="flex-1 rounded-lg border border-arvo-grafite/15 px-3 py-2 text-sm"
+        />
+        <button
+          type="submit"
+          className="rounded-lg border border-arvo-grafite/15 px-4 py-2 text-sm font-medium text-arvo-grafite transition hover:bg-arvo-bg"
+        >
+          Buscar
+        </button>
+        {busca && (
+          <Link
+            href="/eventos"
+            className="flex items-center px-2 text-sm font-medium text-arvo-grafite/50 hover:underline"
+          >
+            Limpar
+          </Link>
+        )}
+      </form>
+
       <div className="mt-6 grid grid-cols-1 gap-4 md:grid-cols-2">
+        {eventos.length === 0 && (
+          <p className="col-span-full rounded-2xl border border-arvo-terracota/10 bg-white px-5 py-6 text-center text-sm text-arvo-grafite/50 shadow-sm">
+            Nenhum evento encontrado com essa busca.
+          </p>
+        )}
         {eventos.map((evento) => {
           const capa = capas.get(evento.id);
           return (
@@ -123,8 +173,13 @@ export default async function EventosPage(props: PageProps<"/eventos">) {
       <Pagination
         paginaAtual={pagina}
         totalPaginas={totalPaginas}
-        hrefFor={(p) => `/eventos?pagina=${p}`}
+        hrefFor={hrefComPagina}
       />
     </div>
   );
+}
+
+function firstValue(v: string | string[] | undefined) {
+  if (Array.isArray(v)) return v[0];
+  return v || undefined;
 }
