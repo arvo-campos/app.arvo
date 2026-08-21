@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import { Archivo } from "next/font/google";
 import { PwaRegister } from "@/components/PwaRegister";
+import { ManejosPendentesBanner } from "@/components/offline/ManejosPendentesBanner";
 import "./globals.css";
 
 const archivo = Archivo({
@@ -28,6 +29,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
     <html lang="pt-BR" className={`${archivo.variable} h-full antialiased`}>
       <body className="flex min-h-full flex-col bg-arvo-bg font-sans text-arvo-grafite">
         <PwaRegister />
+        <ManejosPendentesBanner />
         {children}
       </body>
     </html>

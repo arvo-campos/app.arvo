@@ -2,14 +2,18 @@
 
 import { useRef, useState } from "react";
 import { useActionState } from "react";
-import { createManejo, updateManejo } from "@/lib/actions/manejos";
+import Link from "next/link";
+import { updateManejo } from "@/lib/actions/manejos";
 import type { FormState } from "@/lib/actions/clientes";
+import { criarManejoComFallbackOffline } from "@/lib/offline/manejoQueue";
 import { Field } from "@/components/ui/Field";
 import { SelectField } from "@/components/ui/SelectField";
 import { Button } from "@/components/ui/Button";
 import { CollapsibleSection } from "@/components/ui/CollapsibleSection";
 import { cn } from "@/lib/utils";
 import { TIPO_MANEJO_LABEL, TIPO_MANEJO_DESCRICAO, PRESETS_APLICACAO } from "@/lib/constants";
+
+type ManejoFormState = (FormState & { offline?: boolean }) | undefined;
 
 type TipoManejo = keyof typeof TIPO_MANEJO_LABEL;
 const TIPOS: TipoManejo[] = ["plantio", "aplicacao", "montagem", "organizacao"];
@@ -87,11 +91,6 @@ export function ManejoForm({
   manejo?: ManejoDefaults;
 }) {
   const formRef = useRef<HTMLFormElement>(null);
-  const action = manejo ? updateManejo.bind(null, manejo.id) : createManejo;
-  const [state, formAction, pending] = useActionState<FormState, FormData>(
-    action,
-    undefined
-  );
   const [tipo, setTipo] = useState<TipoManejo>(
     (manejo?.tipo as TipoManejo) ?? "plantio"
   );
@@ -113,6 +112,19 @@ export function ManejoForm({
   );
   const [parcelaIds, setParcelaIds] = useState<string[]>(
     manejo?.parcelas.map((p) => p.id) ?? []
+  );
+
+  const action = manejo
+    ? updateManejo.bind(null, manejo.id)
+    : (prevState: ManejoFormState, formData: FormData) =>
+        criarManejoComFallbackOffline(prevState, formData, {
+          eventoNome:
+            eventos.find((e) => e.id === eventoId)?.nome ?? "Evento",
+          tipoLabel: TIPO_MANEJO_LABEL[tipo],
+        });
+  const [state, formAction, pending] = useActionState<ManejoFormState, FormData>(
+    action,
+    undefined
   );
 
   const parcelasDoEvento = parcelas.filter((p) => p.eventoId === eventoId);
@@ -174,6 +186,34 @@ export function ManejoForm({
           ? { ...p, [field]: field === "numTrat" ? Number(value) : value }
           : p
       )
+    );
+  }
+
+  if (state?.offline) {
+    return (
+      <div className="rounded-2xl border border-arvo-terracota/10 bg-white p-6 shadow-sm">
+        <p className="font-display text-lg font-bold text-arvo-grafite">
+          Salvo no celular
+        </p>
+        <p className="mt-1 text-sm text-arvo-grafite/60">
+          Sem conexão no momento — o manejo de {TIPO_MANEJO_LABEL[tipo]} fica
+          guardado aqui e é enviado sozinho assim que a internet voltar.
+        </p>
+        <div className="mt-4 flex flex-wrap gap-3">
+          <Link
+            href="/manejos/novo"
+            className="rounded-lg bg-arvo-terracota px-4 py-2.5 text-sm font-semibold text-arvo-bg"
+          >
+            Registrar outro manejo
+          </Link>
+          <Link
+            href="/manejos"
+            className="rounded-lg border border-arvo-grafite/15 px-4 py-2.5 text-sm font-semibold text-arvo-grafite"
+          >
+            Ver manejos
+          </Link>
+        </div>
+      </div>
     );
   }
 
