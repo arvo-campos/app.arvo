@@ -41,9 +41,10 @@ model Parcela {
   evento             Evento     @relation(fields: [eventoId], references: [id], onDelete: Cascade)
   nome               String // ex: "GH 2459"
   linhas             Int?
-  largura            String?
-  posX               Int
-  posY               Int
+  largura            Float? // metros
+  comprimento        Float? // metros
+  posX               Int // ordem dentro da fileira (0 = primeira)
+  posY               Int // fileira (0 = primeira)
   tipo               String // "parcela" | "corredor" | "rua"
   manejos            Manejo[]
   vistoriasSugeridas Vistoria[]
